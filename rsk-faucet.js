@@ -104,7 +104,7 @@ function getWeb3() {
 
   console.log('using web3', rskNode);
   web3 = new Web3();
-  web3.setProvider(new web3.providers.HttpProvider('http://' + rskNode));
+  web3.setProvider(new web3.providers.HttpProvider(rskNode));
 
   return web3;
 }
@@ -147,7 +147,7 @@ function estimateGasPrice(){
   if (block.minimumGasPrice <= 1) {
     return 1;
   } else {
-    return block.minimumGasPrice * 1.0001;
+    return block.minimumGasPrice * 1.01;
   }
 }
 
@@ -197,11 +197,6 @@ app.get('/balance', function (req, res) {
 });
 
 app.post('/', function (req, res) {
-  if (!isValidRSKAddress(req.body.rskAddress, 31)) {
-    console.log('Invalid RSK address format ', req.body.rskAddress);
-    return res.status(400).send('Invalid RSK address format.');
-  }
-
   if (accountAlreadyUsed(req.body.rskAddress)) {
     console.log('Address already used today:', req.body.rskAddress);
     return res.status(400).send('Address already used today.');
@@ -225,7 +220,14 @@ app.post('/', function (req, res) {
     executeTransfer(req.body.rskAddress)
 
     faucetHistory[req.body.rskAddress.toLowerCase()] = {timestamp: new Date().getTime()};
-    res.send('Successfully sent some SBTCs to ' + req.body.rskAddress + '.');
+    if (isValidRSKAddress(req.body.rskAddress, 31)) {
+      res.send('Successfully sent some RBTCs to ' + req.body.rskAddress + '.');
+    } else {
+      console.log(rskUtil.toChecksumAddress(req.body.rskAddress.toLowerCase(), 31));
+      res.send('Successfully sent some RBTCs to ' + req.body.rskAddress + '. </br>' +
+        'Please consider using this address with RSK Testnet checksum: ' + rskUtil.toChecksumAddress(req.body.rskAddress.toLowerCase(), 31));
+    }
+
   } else {
     res.status(400).send('We can not tranfer any amount right now. Try again later.' + req.body.rskAddress + '.');
   }
